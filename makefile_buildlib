@@ -1,0 +1,100 @@
+#use: make rootdir=<root_dir> base_libname=<base_libname> [debug=0|1] [arch=32|64] [std=11|14...] [static=0|1] [modules=0|1] [compiler_family=g++] [compiler_version=unknow]
+
+BASE_LIBNAME=$(base_libname)
+SRC=../src/iron_core.cpp
+
+ifndef $(debug)
+debug=0
+endif 
+
+ifeq ($(std),)
+STD=c++23
+else 
+STD=c++$(std)
+endif 
+
+
+ifndef $(compiler_family)
+compiler_family=g++
+endif 
+
+ifndef $(compiler_version) 
+compiler_version=unknow
+endif 
+
+ifndef $(arch) 
+arch=64
+endif 
+
+ifndef $(modules) 
+modules=0
+endif 
+
+ifeq ($(modules),1)
+USE_MODULES=-DUSE_MODULES
+else
+USE_MODULES=
+endif
+
+FAMILY=$(compiler_family)
+ARCH=-m$(arch)
+COMPILER_VERSION=$(compiler_version)
+BUILD_DIR = ./build/$(FAMILY)_$(COMPILER_VERSION)_$(arch)
+ifeq ($(debug),1) 
+BUILD_DIR := $(BUILD_DIR)_d
+endif 
+
+LIBPATH=$(BUILD_DIR)/$(BASE_LIBNAME)
+
+ifeq ($(debug),1)
+DEBUG=-ggdb
+OPTIONS=
+else 
+DEBUG= 
+OPTIONS=-ggdb -O3 -DNDEBUG 
+endif 
+
+SECURITY= -Werror=format-security -fstack-clash-protection -fstack-protector-strong -fcf-protection=full \
+	-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3
+
+ifeq ($(debug),1) 
+LIBPATH:=$(LIBPATH)d
+endif 
+
+ifeq ($(static),1)
+LIBPATH:=$(LIBPATH).a
+else
+LIBPATH:=$(LIBPATH).so
+endif 
+
+ROOT=$(rootdir)
+EXTRA=-Werror -Wextra -Wno-unused-parameter -Wno-ignored-qualifiers -frtti
+CFLAGS= -std=$(STD) -Wall $(EXTRA) -Wformat=2 -Wimplicit-fallthrough $(DEBUG)  -I$(ROOT)/includes $(ARCH) $(SECURITY) $(OPTIONS) $(USE_MODULES) -DIRON_EXPORTS -fvisibility=hidden -fPIC
+
+ifeq ($(compiler_family),g++)
+CFLAGS+= -flto -fdata-sections -ffunction-sections
+endif 
+
+DEP = $(BUILD_DIR)/iron_core.d
+
+all: $(LIBPATH)  
+
+
+ifeq ($(static),1)
+$(LIBPATH): $(BUILD_DIR)/iron_core.o
+	echo "build library $(LIBPATH)" >&2
+	ar rcs $(LIBPATH) $(BUILD_DIR)/iron_core.o
+else  
+$(LIBPATH): $(BUILD_DIR)/iron_core.o
+	echo "build library $(LIBPATH)" >&2
+	$(CXX) -o $(LIBPATH) $(ARCH) -shared -Wl,--gc-sections $(OPTIONS) $(BUILD_DIR)/iron_core.o 
+endif 
+
+-include $(DEP)
+
+$(BUILD_DIR)/iron_core.o: $(SRC)
+	mkdir -p $(BUILD_DIR)
+	$(CXX) $(CFLAGS) -c $(SRC) -MMD -frtti -o $(BUILD_DIR)/iron_core.o
+
+
+

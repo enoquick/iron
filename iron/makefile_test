@@ -1,0 +1,107 @@
+#use: make rootdir=<root_dir>  [debug=0|1] [arch=32|64] [std=11|14...] [modules=1|0] [compiler_family=g++] [compiler_family=g++] [compiler_version=unknow]
+
+ifndef $(debug)
+debug=1
+endif 
+
+ifeq ($(std),)
+STD=c++23
+else 
+STD=c++$(std)
+endif 
+
+ifndef $(compiler_family)
+compiler_family=g++
+endif 
+
+ifndef $(arch) 
+arch=64
+endif 
+
+ifndef $(compiler_version) 
+compiler_version=unknow
+endif 
+
+FAMILY=$(compiler_family)
+ARCH=-m$(arch)
+COMPILER_VERSION=$(compiler_version)
+#BUILD_DIR = ./build/$(FAMILY)_$(COMPILER_VERSION)_$(arch)
+BUILD_DIR=.
+
+#ifeq ($(debug),1) 
+#BUILD_DIR := $(BUILD_DIR)_d
+#endif 
+
+BIN = a.out
+
+ifeq ($(debug),1)
+DEBUG=-ggdb
+DEBUG_FOR_ASS=-ggdb
+DEADCODESTRIP=
+else 
+DEBUG=-ggdb -O3 -DNDEBUG
+DEBUG_FOR_ASS=-ggdb -O -DNDEBUG
+DEADCODESTRIP=-flto -fdata-sections -ffunction-sections
+endif 
+
+ifeq ($(modules),1)
+USE_MODULES=_DUSE_MODULES
+else
+USE_MODULES=
+endif
+
+ROOT=$(rootdir)
+SRCFILES := $(shell find .. -type f -name '*.cpp')
+OBJS = $(patsubst ../%.cpp,$(BUILD_DIR)/%.o,$(SRCFILES))
+DEP = $(OBJS:%.o=%.d)
+OPTIONS=-Wall  -Werror -Wformat -Wformat=2  -Wextra -Wno-unused-parameter -Wno-ignored-qualifiers
+
+#-Wimplicit-fallthrough
+INCLUDES=-I$(ROOT)/includes
+
+SECURITY= -Werror=format-security -fstack-clash-protection -fstack-protector-strong -fcf-protection=full \
+	-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3
+
+LIBDIR=$(ROOT)/libs/build/$(compiler_family)_$(COMPILER_VERSION)_$(arch)
+LIB=iron
+ifeq ($(debug),1)
+LIBDIR := $(LIBDIR)_d
+LIB:=$(LIB)d
+endif
+
+ifeq ($(compiler_family),g++)
+	COMPILER_DEPEND=-fconstexpr-ops-limit=999999999
+else ifeq ($(compiler_family),clang++)
+	COMPILER_DEPEND=-fconstexpr-steps=999999999
+else
+	COMPILER_DEPEND=
+endif
+
+CFLAGS= -std=$(STD) $(DEBUG)  $(ARCH) $(OPTIONS) $(INCLUDES) $(DEADCODESTRIP) $(COMPILER_DEPEND) $(USE_MODULES) $(SECURITY)
+
+all: $(BIN)
+
+$(BIN) : $(OBJS) 
+	$(CXX) $(CFLAGS) $(DEADCODESTRIP) $^ -o $@ -L$(LIBDIR) -l$(LIB)
+
+-include $(DEP)
+
+
+$(BUILD_DIR)/%.o : ../%.cpp
+	$(CXX) $(CFLAGS) -MMD -c $< -o $@
+#	$(CXX) -std=$(STD) $(DEBUG_FOR_ASS)  $(ARCH) $(INCLUDES) $(DEADCODESTRIP) $(COMPILER_DEPEND) $(USE_MODULES) -MMD -S $<  
+
+
+#for debug - use $(BIN) : print $(OBJS) for example  
+print  : 
+	@echo PWD = $(PWD)
+	@echo SRCFILES = $(SRCFILES)
+	@echo OBJS = $(OBJS) 
+
+.PHONY : clean
+
+clean: 
+	rm -rf build 
+	rm -f a.out
+		
+	

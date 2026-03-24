@@ -1,0 +1,15 @@
+Iron is an experimental C++ library that ensures security and ease of use.
+Security cannot be guaranteed 100% without modifying the language, but a good approximation can be achieved as
+long as the user uses secure methods correctly.
+The guarantee on use is guaranteed at compile time through the require and/or static_assert clauses of C++, at runtime thanks to
+the use of a security_checker class instance internal to the desired class and the definition of safe methods in use.
+For performance reasons, a security_checker instance is only active in debug mode.
+Another feature is to avoid potentially expensive copies by disabling the constructor/assignment
+of copy for those classes that request it.
+In this case, if a copy is needed, the programmer must use the clone() or try_clone() method.
+Another convenience is compile-time evaluable methods.
+Almost all methods of a class are evaluable at compile time, with few exceptions.
+Additionally, the library does not use exception handling due to various issues it poses.
+Iron is tested on g++ 12..15,clang++ 19, ms visual c++ 2022/2026
+c++ std 23 is required.
+See reference manual for a more in-depth explanation.

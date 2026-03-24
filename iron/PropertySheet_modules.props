@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+<PropertyGroup>
+    <LibraryPath>D:\iron_REPO\iron\$(IntDir);$(LibraryPath)</LibraryPath>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <CodeAnalysisRuleset>C:\Program Files\Microsoft Visual Studio\2022\Community\Team Tools\Static Analysis Tools\Rule Sets\AllRules.ruleset</CodeAnalysisRuleset>
+</PropertyGroup>
+
+<ItemDefinitionGroup>
+  <ClCompile>
+     <LanguageStandard>stdcppLatest</LanguageStandard>
+      <EnableClangModuleCode>true</EnableClangModuleCode>
+      <EnableMSVCServer>true</EnableMSVCServer>
+      <EnableExperimentalCppModules>true</EnableExperimentalCppModules>
+
+     <AdditionalOptions>/D "USE_MODULES" %(AdditionalOptions)</AdditionalOptions>
+    <AdditionalIncludeDirectories>
+      D:\iron_REPO\includes;
+       %(AdditionalIncludeDirectories)
+    </AdditionalIncludeDirectories>
+    <BuildStlModules>true</BuildStlModules> 
+    <ScanSourceForModuleDependencies>true</ScanSourceForModuleDependencies>
+  </ClCompile>
+</ItemDefinitionGroup>
+
+</Project>
